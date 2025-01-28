@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Bingo</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style>
+        .bg-win {
+            background-color: #86efac !important; /* green-200 */
+        }
+        .bg-lose {
+            background-color: #fecaca !important; /* red-200 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full">
+        <div id="game-container" class="rounded-lg shadow-lg p-6 transition-colors duration-300 bg-white">
+            <h1 class="text-2xl font-bold text-center mb-6">Daily Bingo</h1>
+            <div id="bingo-board" class="grid grid-cols-3 gap-4 mb-4">
+                <!-- Bingo squares will be inserted here -->
+            </div>
+            <div id="win-message" class="hidden text-center text-2xl font-bold mt-4">
+                Wygrana!!!
+            </div>
+            <div id="lose-message" class="hidden text-center text-2xl font-bold mt-4">
+                Może następnym razem...
+            </div>
+        </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div id="win-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-xl text-center">
+            <h2 class="text-2xl font-bold mb-4">🎉 Bingo! 🎉</h2>
+            <p class="mb-4">A teraz wracaj</p>
+            <button onclick="closeModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Do roboty
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const events = [
+            "Kierowniczki",
+            "Zły numer telefonu",
+            "Zły adres",
+            "Printer Issues",
+            "Surprise Deadline",
+            "Network Down",
+            "Late Lunch",
+            "Client Call",
+            "Team Chat",
+            "End of Day Rush"
+        ];
+
+        const winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6] // Diagonals
+        ];
+
+        let markedSquares = new Set();
+        let boardEvents = [];
+        let hasWon = false;
+
+        function getStorageKey() {
+            const today = new Date().toISOString().split('T')[0];
+            return `bingo_${today}`;
+        }
+
+        function getMarkedSquaresKey() {
+            const today = new Date().toISOString().split('T')[0];
+            return `bingo_marked_${today}`;
+        }
+
+        function checkTimeLimit() {
+            const now = new Date();
+            const day = now.getDay(); // 0 is Sunday, 1 is Monday, etc.
+            const hour = now.getHours();
+
+            // Friday (5) and Saturday (6) have 23:00 deadline
+            if ((day === 5 || day === 6) && hour >= 23) {
+                return false;
+            }
+            // All other days have 22:00 deadline
+            else if (hour >= 22) {
+                return false;
+            }
+            return true;
+        }
+
+        function updateGameAppearance() {
+            const container = document.getElementById('game-container');
+            const winMessage = document.getElementById('win-message');
+            const loseMessage = document.getElementById('lose-message');
+
+            // Remove all background classes first
+            container.classList.remove('bg-win', 'bg-lose', 'bg-white');
+
+            if (hasWon) {
+                container.classList.add('bg-win');
+                winMessage.classList.remove('hidden');
+                loseMessage.classList.add('hidden');
+            } else if (!checkTimeLimit()) {
+                container.classList.add('bg-lose');
+                winMessage.classList.add('hidden');
+                loseMessage.classList.remove('hidden');
+            } else {
+                container.classList.add('bg-white');
+                winMessage.classList.add('hidden');
+                loseMessage.classList.add('hidden');
+            }
+        }
+
+        function loadGameState() {
+            const storageKey = getStorageKey();
+            const markedKey = getMarkedSquaresKey();
+            
+            // Load board events
+            const savedBoard = localStorage.getItem(storageKey);
+            if (savedBoard) {
+                boardEvents = JSON.parse(savedBoard);
+            } else {
+                boardEvents = shuffleArray([...events]).slice(0, 9);
+                localStorage.setItem(storageKey, JSON.stringify(boardEvents));
+            }
+
+            // Load marked squares
+            const savedMarked = localStorage.getItem(markedKey);
+            if (savedMarked) {
+                markedSquares = new Set(JSON.parse(savedMarked));
+            }
+
+            // Load win state
+            hasWon = localStorage.getItem(getStorageKey() + '_won') === 'true';
+        }
+
+        function saveMarkedSquares() {
+            const markedKey = getMarkedSquaresKey();
+            localStorage.setItem(markedKey, JSON.stringify([...markedSquares]));
+        }
+
+        function saveWinState() {
+            localStorage.setItem(getStorageKey() + '_won', hasWon);
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function initializeBoard() {
+            loadGameState();
+            
+            const board = document.getElementById('bingo-board');
+            board.innerHTML = boardEvents.map((event, index) => `
+                <button 
+                    onclick="handleClick(${index})"
+                    class="h-24 p-2 rounded border-2 border-black hover:border-neutral-900 transition-colors duration-200 text-sm ${markedSquares.has(index) ? 'bg-red-500 text-white line-through' : ''}"
+                    id="square-${index}"
+                >
+                    ${event}
+                </button>
+            `).join('');
+
+            updateGameAppearance();
+
+            if (hasWon) {
+                showModal();
+            }
+        }
+
+        function handleClick(index) {
+            if (!checkTimeLimit() && !hasWon) return; // Prevent clicks after time limit if not won
+
+            const square = document.getElementById(`square-${index}`);
+            
+            if (markedSquares.has(index)) {
+                markedSquares.delete(index);
+                square.classList.remove('bg-red-500', 'text-white', 'line-through');
+            } else {
+                markedSquares.add(index);
+                square.classList.add('bg-red-500', 'text-white', 'line-through');
+            }
+
+            saveMarkedSquares();
+            checkWin();
+        }
+
+        function checkWin() {
+            const won = winPatterns.some(pattern => 
+                pattern.every(index => markedSquares.has(index))
+            );
+
+            if (won && !hasWon) {
+                hasWon = true;
+                saveWinState();
+                showModal();
+                updateGameAppearance();
+            }
+        }
+
+        function showModal() {
+            document.getElementById('win-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('win-modal').classList.add('hidden');
+        }
+
+        // Check for stored state and initialize the game
+        initializeBoard();
+
+        // Update appearance every minute to check time limit
+        setInterval(updateGameAppearance, 60000);
+    </script>
+</body>
+</html>
