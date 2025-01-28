@@ -7,52 +7,62 @@
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <style>
         .bg-win {
-            background-color: #86efac !important; /* green-200 */
+            background-color: #065f46 !important; /* green-900 */
         }
         .bg-lose {
-            background-color: #fecaca !important; /* red-200 */
+            background-color: #7f1d1d !important; /* red-900 */
+        }
+        body {
+            background-color: #111827; /* gray-900 */
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4">
     <div class="max-w-md w-full">
-        <div id="game-container" class="rounded-lg shadow-lg p-6 transition-colors duration-300 bg-white">
-            <h1 class="text-2xl font-bold text-center mb-6">Daily Bingo</h1>
+        <div id="game-container" class="rounded-lg shadow-lg p-6 transition-colors duration-300 bg-gray-800">
+            <h1 class="text-2xl font-bold text-center mb-6 text-white">Świstak Bingo</h1>
             <div id="bingo-board" class="grid grid-cols-3 gap-4 mb-4">
                 <!-- Bingo squares will be inserted here -->
             </div>
-            <div id="win-message" class="hidden text-center text-2xl font-bold mt-4">
+            <div id="win-message" class="hidden text-center text-2xl font-bold text-green-400 mt-4">
                 Wygrana!!!
             </div>
-            <div id="lose-message" class="hidden text-center text-2xl font-bold mt-4">
+            <div id="lose-message" class="hidden text-center text-2xl font-bold text-red-400 mt-4">
                 Może następnym razem...
             </div>
+            <button id="reset-button" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 mt-4 px-4 rounded w-full border-gray-600">
+                Reset
+            </button>
         </div>
     </div>
 
     <!-- Win Modal -->
-    <div id="win-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white p-8 rounded-lg shadow-xl text-center">
-            <h2 class="text-2xl font-bold mb-4">🎉 Bingo! 🎉</h2>
-            <p class="mb-4">A teraz wracaj</p>
-            <button onclick="closeModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                Do roboty
+    <!-- <div id="win-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl text-center">
+            <h2 class="text-2xl font-bold mb-4 text-white">🎉 Bingo! 🎉</h2>
+            <button onclick="closeModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Wracaj do roboty
             </button>
         </div>
-    </div>
+    </div> -->
 
     <script>
         const events = [
             "Kierowniczki",
             "Zły numer telefonu",
             "Zły adres",
-            "Printer Issues",
-            "Surprise Deadline",
-            "Network Down",
-            "Late Lunch",
-            "Client Call",
-            "Team Chat",
-            "End of Day Rush"
+            "Pani Krysia",
+            "Sztućce na podłodze",
+            "Pomylone zamówienia",
+            "Brak sosu",
+            "Spóźniony wyjazd",
+            "Telefon z Pawłowic",
+            "Źle nabity paragon",
+            "Spalona pizza",
+            "Rozbity talerz/kufel",
+            "Zaginiony kierowca",
+            "Klient nie ma zasięgu",
+            "Klient na ostatni gwizdek"
         ];
 
         const winPatterns = [
@@ -77,14 +87,12 @@
 
         function checkTimeLimit() {
             const now = new Date();
-            const day = now.getDay(); // 0 is Sunday, 1 is Monday, etc.
+            const day = now.getDay();
             const hour = now.getHours();
 
-            // Friday (5) and Saturday (6) have 23:00 deadline
             if ((day === 5 || day === 6) && hour >= 23) {
                 return false;
             }
-            // All other days have 22:00 deadline
             else if (hour >= 22) {
                 return false;
             }
@@ -96,8 +104,7 @@
             const winMessage = document.getElementById('win-message');
             const loseMessage = document.getElementById('lose-message');
 
-            // Remove all background classes first
-            container.classList.remove('bg-win', 'bg-lose', 'bg-white');
+            container.classList.remove('bg-win', 'bg-lose', 'bg-gray-800');
 
             if (hasWon) {
                 container.classList.add('bg-win');
@@ -108,7 +115,7 @@
                 winMessage.classList.add('hidden');
                 loseMessage.classList.remove('hidden');
             } else {
-                container.classList.add('bg-white');
+                container.classList.add('bg-gray-800');
                 winMessage.classList.add('hidden');
                 loseMessage.classList.add('hidden');
             }
@@ -118,7 +125,6 @@
             const storageKey = getStorageKey();
             const markedKey = getMarkedSquaresKey();
             
-            // Load board events
             const savedBoard = localStorage.getItem(storageKey);
             if (savedBoard) {
                 boardEvents = JSON.parse(savedBoard);
@@ -127,13 +133,11 @@
                 localStorage.setItem(storageKey, JSON.stringify(boardEvents));
             }
 
-            // Load marked squares
             const savedMarked = localStorage.getItem(markedKey);
             if (savedMarked) {
                 markedSquares = new Set(JSON.parse(savedMarked));
             }
 
-            // Load win state
             hasWon = localStorage.getItem(getStorageKey() + '_won') === 'true';
         }
 
@@ -161,7 +165,7 @@
             board.innerHTML = boardEvents.map((event, index) => `
                 <button 
                     onclick="handleClick(${index})"
-                    class="h-24 p-2 rounded border-2 border-black hover:border-neutral-900 transition-colors duration-200 text-sm ${markedSquares.has(index) ? 'bg-red-500 text-white line-through' : ''}"
+                    class="h-24 p-2 rounded border-2 border-gray-600 bg-gray-700 transition-colors duration-200 text-sm text-gray-200 ${markedSquares.has(index) ? 'bg-green-900 text-white line-through border-green-700' : ''}"
                     id="square-${index}"
                 >
                     ${event}
@@ -170,22 +174,34 @@
 
             updateGameAppearance();
 
-            if (hasWon) {
-                showModal();
-            }
+            // if (hasWon) {
+            //     showModal();
+            // }
         }
 
+        document.getElementById("reset-button").addEventListener('click', ()=>{
+            hasWon = false;
+            localStorage.setItem(getStorageKey() + '_won', hasWon);
+            // localStorage.setItem(getStorageKey, );
+            localStorage.setItem(getMarkedSquaresKey(), [])
+            updateGameAppearance();
+            initializeBoard();
+            location.reload(true);
+        })
+
         function handleClick(index) {
-            if (!checkTimeLimit() && !hasWon) return; // Prevent clicks after time limit if not won
+            if (!checkTimeLimit() && !hasWon) return;
 
             const square = document.getElementById(`square-${index}`);
             
             if (markedSquares.has(index)) {
                 markedSquares.delete(index);
-                square.classList.remove('bg-red-500', 'text-white', 'line-through');
+                square.classList.remove('bg-green-900', 'text-white', 'line-through', 'border-green-700');
+                square.classList.add('bg-gray-700', 'border-gray-600');
             } else {
                 markedSquares.add(index);
-                square.classList.add('bg-red-500', 'text-white', 'line-through');
+                square.classList.remove('bg-gray-700', 'border-gray-600');
+                square.classList.add('bg-green-900', 'text-white', 'line-through', 'border-green-700');
             }
 
             saveMarkedSquares();
@@ -200,23 +216,20 @@
             if (won && !hasWon) {
                 hasWon = true;
                 saveWinState();
-                showModal();
+                // showModal();
                 updateGameAppearance();
             }
         }
 
-        function showModal() {
-            document.getElementById('win-modal').classList.remove('hidden');
-        }
+        // function showModal() {
+        //     document.getElementById('win-modal').classList.remove('hidden');
+        // }
 
-        function closeModal() {
-            document.getElementById('win-modal').classList.add('hidden');
-        }
+        // function closeModal() {
+        //     document.getElementById('win-modal').classList.add('hidden');
+        // }
 
-        // Check for stored state and initialize the game
         initializeBoard();
-
-        // Update appearance every minute to check time limit
         setInterval(updateGameAppearance, 60000);
     </script>
 </body>
