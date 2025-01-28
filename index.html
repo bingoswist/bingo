@@ -90,10 +90,10 @@
             const day = now.getDay();
             const hour = now.getHours();
 
-            if ((day === 5 || day === 6) && hour >= 23) {
+            if ((day === 5 || day === 6) && (hour >= 23 || hour < 11)) {
                 return false;
             }
-            else if (hour >= 22) {
+            else if (hour >= 22 || hour < 11) {
                 return false;
             }
             return true;
@@ -160,7 +160,6 @@
 
         function initializeBoard() {
             loadGameState();
-            
             const board = document.getElementById('bingo-board');
             board.innerHTML = boardEvents.map((event, index) => `
                 <button 
@@ -185,8 +184,8 @@
             // localStorage.setItem(getStorageKey, );
             localStorage.setItem(getMarkedSquaresKey(), [])
             updateGameAppearance();
+            markedSquares = new Set();
             initializeBoard();
-            location.reload(true);
         })
 
         function handleClick(index) {
@@ -213,10 +212,14 @@
                 pattern.every(index => markedSquares.has(index))
             );
 
-            if (won && !hasWon) {
+            if (won) {
                 hasWon = true;
                 saveWinState();
                 // showModal();
+                updateGameAppearance();
+            } else {
+                hasWon = false;
+                saveWinState();
                 updateGameAppearance();
             }
         }
